@@ -32,6 +32,9 @@ importers:
       express:
         specifier: ^5.1.0
         version: 5.2.1
+      graphile-worker:
+        specifier: ^0.16.6
+        version: 0.16.6(typescript@5.9.3)
       zod:
         specifier: ^3.25.0
         version: 3.25.76
