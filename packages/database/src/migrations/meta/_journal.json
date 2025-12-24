@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1766606484406,
+      "tag": "0000_boris_data_model",
+      "breakpoints": true
+    }
+  ]
+}
