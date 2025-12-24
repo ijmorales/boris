@@ -9,7 +9,7 @@ if (!databaseUrl) {
 }
 
 export default defineConfig({
-  schema: './src/schema/*',
+  schema: ['./src/schema/users.ts', './src/schema/boris.ts'],
   out: './src/migrations',
   dialect: 'postgresql',
   dbCredentials: {
