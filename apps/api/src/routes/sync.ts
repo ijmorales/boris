@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { makeWorkerUtils } from 'graphile-worker';
 import { z } from 'zod';
 import { asyncHandler } from '../lib/async-handler.js';
-import { env } from '../lib/env.js';
 import { ValidationError } from '../lib/errors.js';
+import { queue } from '../lib/queue.js';
 
 export const syncRouter = Router();
 
@@ -30,26 +29,15 @@ syncRouter.post(
 
     const { startDate, endDate } = result.data;
 
-    // Create worker utils and add job
-    const workerUtils = await makeWorkerUtils({
-      connectionString: env.DATABASE_URL,
+    const job = await queue.addJob('sync_meta_ads', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
     });
 
-    try {
-      const job = await workerUtils.addJob('sync_meta_ads', {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
-
-      res.status(202).json({
-        data: {
-          jobId: String(job.id),
-          message: 'Sync job queued successfully',
-          checkStatus: 'Query graphile_worker.jobs table for status',
-        },
-      });
-    } finally {
-      await workerUtils.release();
-    }
+    res.status(202).json({
+      data: {
+        jobId: job.id,
+      },
+    });
   }),
 );

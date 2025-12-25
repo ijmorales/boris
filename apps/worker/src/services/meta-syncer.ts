@@ -10,45 +10,11 @@ import {
   sql,
 } from '@boris/database';
 import { env } from '../lib/env.js';
-
-// ============================================================================
-// Types (inline - no separate file needed)
-// ============================================================================
-
-interface MetaAdAccount {
-  id: string;
-  name: string;
-  currency: string;
-  timezone_name: string;
-  account_status: number;
-}
-
-interface MetaInsight {
-  date_start: string;
-  spend: string;
-  impressions: string;
-  clicks: string;
-  campaign_id?: string;
-  campaign_name?: string;
-  adset_id?: string;
-  adset_name?: string;
-  ad_id?: string;
-  ad_name?: string;
-  reach?: string;
-  frequency?: string;
-  cpm?: string;
-  cpc?: string;
-  ctr?: string;
-  actions?: unknown;
-}
-
-interface MetaPaginatedResponse<T> {
-  data: T[];
-  paging?: {
-    cursors?: { after?: string };
-    next?: string;
-  };
-}
+import type {
+  MetaAdAccount,
+  MetaInsight,
+  MetaPaginatedResponse,
+} from '../types/meta.js';
 
 // ============================================================================
 // MetaSyncer Class
@@ -69,15 +35,22 @@ export class MetaSyncer {
   // --------------------------------------------------------------------------
 
   async sync(startDate: Date, endDate: Date): Promise<void> {
+    console.log(`[Sync] Starting sync from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
     // Step 1: Ensure platform connection exists (for foreign key)
     const connectionId = await this.ensurePlatformConnection();
+    console.log(`[Sync] Platform connection ID: ${connectionId}`);
 
     // Step 2: Discover and upsert all ad accounts
     const metaAccounts = await this.fetchAdAccounts();
+    console.log(`[Sync] Found ${metaAccounts.length} ad accounts:`, metaAccounts.map(a => a.name));
 
     for (const metaAccount of metaAccounts) {
+      console.log(`\n[Sync] Processing account: ${metaAccount.name} (${metaAccount.id})`);
+
       // Upsert ad account
       const dbAccount = await this.upsertAdAccount(connectionId, metaAccount);
+      console.log(`[Sync] Upserted account with DB ID: ${dbAccount.id}`);
 
       // Fetch insights for all levels
       const insights = await this.fetchAllInsights(
@@ -85,12 +58,18 @@ export class MetaSyncer {
         startDate,
         endDate,
       );
+      console.log(`[Sync] Fetched ${insights.length} insights for account ${metaAccount.name}`);
+
+      if (insights.length > 0) {
+        console.log(`[Sync] Sample insight:`, JSON.stringify(insights[0], null, 2));
+      }
 
       // Batch upsert ad objects
       const adObjectMap = await this.batchUpsertAdObjects(
         dbAccount.id,
         insights,
       );
+      console.log(`[Sync] Upserted ${adObjectMap.size} ad objects`);
 
       // Batch upsert spendings
       await this.batchUpsertSpendings(
@@ -98,7 +77,10 @@ export class MetaSyncer {
         insights,
         metaAccount.currency,
       );
+      console.log(`[Sync] Upserted spendings for ${insights.length} insights`);
     }
+
+    console.log(`\n[Sync] Sync completed!`);
   }
 
   // --------------------------------------------------------------------------
@@ -137,6 +119,8 @@ export class MetaSyncer {
     const url = `${this.baseUrl}/${this.apiVersion}${endpoint}`;
     const separator = endpoint.includes('?') ? '&' : '?';
 
+    console.log(`[Meta API] GET ${endpoint.split('?')[0]}`);
+
     const controller = new AbortController();
     const timeoutId = setTimeout(
       () => controller.abort(),
@@ -151,10 +135,13 @@ export class MetaSyncer {
 
       if (!response.ok) {
         const errorBody = await response.text();
+        console.error(`[Meta API] Error ${response.status}:`, errorBody);
         throw new Error(`Meta API error (${response.status}): ${errorBody}`);
       }
 
-      return (await response.json()) as T;
+      const data = (await response.json()) as T;
+      console.log(`[Meta API] Response:`, JSON.stringify(data, null, 2).slice(0, 1000));
+      return data;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Meta API timeout after ${this.requestTimeoutMs}ms`);
@@ -176,11 +163,10 @@ export class MetaSyncer {
 
       // Get next page URL if exists
       if (response.paging?.next) {
-        // Extract path from full URL
-        currentEndpoint = response.paging.next.replace(
-          `${this.baseUrl}/${this.apiVersion}`,
-          '',
-        );
+        // Extract path from full URL using URL parser
+        const nextUrl = new URL(response.paging.next);
+        currentEndpoint = nextUrl.pathname.replace(/^\/v[\d.]+/, '') + nextUrl.search;
+        console.log(`[Meta API] Next page: ${currentEndpoint.slice(0, 100)}...`);
       } else {
         currentEndpoint = null;
       }
