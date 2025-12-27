@@ -5,6 +5,7 @@ import express from 'express';
 import { env } from './lib/env.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './routes/health.js';
+import { syncRouter } from './routes/sync.js';
 import { usersRouter } from './routes/users.js';
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use('/health', healthRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/sync', syncRouter);
 
 app.use(errorHandler);
 

@@ -5,6 +5,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
+  META_ADS_TOKEN: z.string().min(1, 'META_ADS_TOKEN is required'),
 });
 
 export const env = envSchema.parse(process.env);
