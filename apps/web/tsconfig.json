@@ -11,6 +11,10 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "rootDirs": [".", "./.react-router/types"],
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./app/*"]
+    }
   }
 }

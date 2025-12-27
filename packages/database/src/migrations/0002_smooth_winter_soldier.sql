@@ -1,0 +1,1 @@
+DROP INDEX "spendings_collected_at_idx";

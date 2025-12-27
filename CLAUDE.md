@@ -69,3 +69,16 @@ API enqueues jobs via `apps/api/src/lib/queue.ts` → Worker processes via tasks
 - Biome for linting/formatting (2-space indent, single quotes, semicolons)
 - TypeScript with strict mode
 - Each app loads its own `.env` file via `dotenv/config`
+
+## Bug & Feature Tracking
+
+Track bugs and feature requests in the Notion database:
+https://www.notion.so/imrl/2d2e038049d9803384e2ef0bb8cf8fea?v=2d2e038049d980e9bb8b000c9ba416dd
+
+When creating a new issue, include:
+- **Title**: Brief description of the bug/feature
+- **Type**: Bug or Feature
+- **Priority**: Critical, High, Medium, Low
+- **Description**: Detailed explanation with code references
+- **Steps to Reproduce** (for bugs): How to trigger the issue
+- **Expected vs Actual**: What should happen vs what happens
