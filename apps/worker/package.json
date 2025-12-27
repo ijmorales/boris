@@ -6,7 +6,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sync": "tsx src/scripts/trigger-sync.ts"
   },
   "dependencies": {
     "@boris/database": "workspace:*",
