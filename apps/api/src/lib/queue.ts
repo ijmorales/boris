@@ -29,8 +29,28 @@ export const queue = {
     payload: JobPayloads[T],
   ): Promise<{ id: string }> {
     const utils = await getWorkerUtils();
-    const job = await utils.addJob(taskIdentifier, payload);
+    // biome-ignore lint/suspicious/noExplicitAny: graphile-worker types incompatible
+    const job = await utils.addJob(taskIdentifier, payload as any);
     return { id: String(job.id) };
+  },
+
+  async addJobs<T extends JobName>(
+    jobs: Array<{ taskIdentifier: T; payload: JobPayloads[T] }>,
+  ): Promise<{ ids: string[] }> {
+    const utils = await getWorkerUtils();
+    const ids: string[] = [];
+
+    for (let i = 0; i < jobs.length; i++) {
+      const job = await utils.addJob(
+        jobs[i].taskIdentifier,
+        // biome-ignore lint/suspicious/noExplicitAny: graphile-worker types incompatible
+        jobs[i].payload as any,
+        { priority: i },
+      );
+      ids.push(String(job.id));
+    }
+
+    return { ids };
   },
 
   async release(): Promise<void> {
