@@ -35,7 +35,9 @@ export class MetaSyncer {
   // --------------------------------------------------------------------------
 
   async sync(startDate: Date, endDate: Date): Promise<void> {
-    console.log(`[Sync] Starting sync from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    console.log(
+      `[Sync] Starting sync from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+    );
 
     // Step 1: Ensure platform connection exists (for foreign key)
     const connectionId = await this.ensurePlatformConnection();
@@ -43,10 +45,15 @@ export class MetaSyncer {
 
     // Step 2: Discover and upsert all ad accounts
     const metaAccounts = await this.fetchAdAccounts();
-    console.log(`[Sync] Found ${metaAccounts.length} ad accounts:`, metaAccounts.map(a => a.name));
+    console.log(
+      `[Sync] Found ${metaAccounts.length} ad accounts:`,
+      metaAccounts.map((a) => a.name),
+    );
 
     for (const metaAccount of metaAccounts) {
-      console.log(`\n[Sync] Processing account: ${metaAccount.name} (${metaAccount.id})`);
+      console.log(
+        `\n[Sync] Processing account: ${metaAccount.name} (${metaAccount.id})`,
+      );
 
       // Upsert ad account
       const dbAccount = await this.upsertAdAccount(connectionId, metaAccount);
@@ -58,10 +65,15 @@ export class MetaSyncer {
         startDate,
         endDate,
       );
-      console.log(`[Sync] Fetched ${insights.length} insights for account ${metaAccount.name}`);
+      console.log(
+        `[Sync] Fetched ${insights.length} insights for account ${metaAccount.name}`,
+      );
 
       if (insights.length > 0) {
-        console.log(`[Sync] Sample insight:`, JSON.stringify(insights[0], null, 2));
+        console.log(
+          `[Sync] Sample insight:`,
+          JSON.stringify(insights[0], null, 2),
+        );
       }
 
       // Batch upsert ad objects
@@ -140,7 +152,10 @@ export class MetaSyncer {
       }
 
       const data = (await response.json()) as T;
-      console.log(`[Meta API] Response:`, JSON.stringify(data, null, 2).slice(0, 1000));
+      console.log(
+        `[Meta API] Response:`,
+        JSON.stringify(data, null, 2).slice(0, 1000),
+      );
       return data;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -165,8 +180,11 @@ export class MetaSyncer {
       if (response.paging?.next) {
         // Extract path from full URL using URL parser
         const nextUrl = new URL(response.paging.next);
-        currentEndpoint = nextUrl.pathname.replace(/^\/v[\d.]+/, '') + nextUrl.search;
-        console.log(`[Meta API] Next page: ${currentEndpoint.slice(0, 100)}...`);
+        currentEndpoint =
+          nextUrl.pathname.replace(/^\/v[\d.]+/, '') + nextUrl.search;
+        console.log(
+          `[Meta API] Next page: ${currentEndpoint.slice(0, 100)}...`,
+        );
       } else {
         currentEndpoint = null;
       }
