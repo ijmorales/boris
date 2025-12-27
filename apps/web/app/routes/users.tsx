@@ -1,4 +1,5 @@
-import { Link, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
+import { Header } from '../components/header';
 import type { Route } from './+types/users';
 
 interface User {
@@ -32,25 +33,27 @@ export default function Users() {
   const { users, error } = useLoaderData<typeof loader>();
 
   return (
-    <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Users</h1>
-      <Link to="/">&larr; Back home</Link>
+    <>
+      <Header />
+      <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
+        <h1>Users</h1>
 
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
 
-      {users.length === 0 && !error && (
-        <p style={{ marginTop: '1rem' }}>No users found.</p>
-      )}
+        {users.length === 0 && !error && (
+          <p style={{ marginTop: '1rem' }}>No users found.</p>
+        )}
 
-      {users.length > 0 && (
-        <ul style={{ marginTop: '1rem' }}>
-          {users.map((user) => (
-            <li key={user.id}>
-              {user.name} ({user.email})
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+        {users.length > 0 && (
+          <ul style={{ marginTop: '1rem' }}>
+            {users.map((user) => (
+              <li key={user.id}>
+                {user.name} ({user.email})
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </>
   );
 }

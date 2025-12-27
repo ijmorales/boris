@@ -1,3 +1,5 @@
+import { ClerkProvider } from '@clerk/react-router';
+import { clerkMiddleware, rootAuthLoader } from '@clerk/react-router/server';
 import {
   isRouteErrorResponse,
   Links,
@@ -7,6 +9,10 @@ import {
   ScrollRestoration,
 } from 'react-router';
 import type { Route } from './+types/root';
+
+export const middleware: Route.MiddlewareFunction[] = [clerkMiddleware()];
+
+export const loader = (args: Route.LoaderArgs) => rootAuthLoader(args);
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,8 +32,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Root() {
-  return <Outlet />;
+export default function Root({ loaderData }: Route.ComponentProps) {
+  return (
+    <ClerkProvider loaderData={loaderData}>
+      <Outlet />
+    </ClerkProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
@@ -50,7 +60,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
       <h1>{message}</h1>
       <p>{details}</p>
-      {stack && (
+      {import.meta.env.DEV && stack && (
         <pre
           style={{
             padding: '1rem',
