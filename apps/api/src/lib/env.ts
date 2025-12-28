@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   PORT: z.coerce.number().default(4000),
@@ -7,8 +9,13 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  CLERK_SECRET_KEY: z.string().min(1, 'CLERK_SECRET_KEY is required'),
-  CLERK_PUBLISHABLE_KEY: z.string().min(1, 'CLERK_PUBLISHABLE_KEY is required'),
+  // Clerk keys are required in production, optional in development
+  CLERK_SECRET_KEY: isDev
+    ? z.string().optional()
+    : z.string().min(1, 'CLERK_SECRET_KEY is required in production'),
+  CLERK_PUBLISHABLE_KEY: isDev
+    ? z.string().optional()
+    : z.string().min(1, 'CLERK_PUBLISHABLE_KEY is required in production'),
 });
 
 export const env = envSchema.parse(process.env);

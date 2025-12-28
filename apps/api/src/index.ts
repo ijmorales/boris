@@ -20,8 +20,13 @@ app.use(express.json());
 // Health check BEFORE Clerk middleware (always accessible)
 app.use('/health', healthRouter);
 
-// Clerk middleware attaches auth to all subsequent requests
-app.use(clerkMiddleware());
+// Clerk middleware attaches auth to all subsequent requests (only if configured)
+const isClerkConfigured = Boolean(env.CLERK_SECRET_KEY);
+if (isClerkConfigured) {
+  app.use(clerkMiddleware());
+} else if (env.NODE_ENV === 'development') {
+  console.warn('⚠️  Clerk not configured - auth disabled in development mode');
+}
 
 // Protected routes
 app.use('/api/ad-accounts', requireAuth, adAccountsRouter);

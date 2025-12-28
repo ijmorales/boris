@@ -43,9 +43,10 @@ describe('Authentication Middleware', () => {
     }) as RequestHandler);
 
     // Mock getAuth to return the auth state from req
-    vi.mocked(getAuth).mockImplementation(
-      (req: RequestWithAuth) => req.auth || { userId: null },
-    );
+    // biome-ignore lint/suspicious/noExplicitAny: Test mock doesn't need full type
+    vi.mocked(getAuth).mockImplementation((req: RequestWithAuth): any => ({
+      userId: req.auth?.userId ?? null,
+    }));
 
     testApp.use(clerkMiddleware());
 
@@ -64,10 +65,15 @@ describe('Authentication Middleware', () => {
   };
 
   beforeEach(() => {
+    // Set Clerk keys to enable auth testing
+    process.env.CLERK_SECRET_KEY = 'sk_test_fake_key';
+    process.env.NODE_ENV = 'production'; // Force auth to be required
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    delete process.env.CLERK_SECRET_KEY;
+    process.env.NODE_ENV = 'test';
     vi.restoreAllMocks();
   });
 

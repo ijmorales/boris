@@ -11,9 +11,22 @@ import {
 import type { Route } from './+types/root';
 import './app.css';
 
-export const middleware: Route.MiddlewareFunction[] = [clerkMiddleware()];
+// Check if Clerk is configured (server-side only)
+const isClerkConfigured = Boolean(process.env.CLERK_SECRET_KEY);
 
-export const loader = (args: Route.LoaderArgs) => rootAuthLoader(args);
+// Only apply Clerk middleware if configured
+export const middleware: Route.MiddlewareFunction[] = isClerkConfigured
+  ? [clerkMiddleware()]
+  : [];
+
+// Loader that handles auth when Clerk is configured
+export const loader = (args: Route.LoaderArgs) => {
+  if (isClerkConfigured) {
+    return rootAuthLoader(args);
+  }
+  // Return empty auth state when Clerk is not configured
+  return { clerkState: null };
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +47,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function Root({ loaderData }: Route.ComponentProps) {
+  // Only wrap with ClerkProvider if Clerk is configured
+  if (!isClerkConfigured) {
+    return <Outlet />;
+  }
+
   return (
     <ClerkProvider loaderData={loaderData}>
       <Outlet />
