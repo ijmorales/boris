@@ -69,9 +69,10 @@ Express REST API with:
 ### Web (`apps/web`)
 
 React Router v7 with:
-- Server-side rendering
+- Single Page Application (SPA) mode
 - Vite bundler
-- API proxy to backend
+- API proxy in development
+- Clerk authentication
 
 ### Worker (`apps/worker`)
 
@@ -85,3 +86,33 @@ Graphile Worker with:
 Uses Drizzle ORM with TimescaleDB (PostgreSQL 16 compatible).
 
 Schema location: `packages/database/src/schema/`
+
+## Deployment
+
+### Web App (SPA)
+
+The web app builds to static files that can be hosted on any static hosting service:
+
+```bash
+pnpm --filter @boris/web build
+# Output: apps/web/build/client/
+```
+
+**Production Configuration:**
+
+1. Set `VITE_API_URL` to your API server URL (e.g., `https://api.your-domain.com`)
+2. Set `VITE_CLERK_PUBLISHABLE_KEY` from your Clerk dashboard
+3. Configure CORS on the API server to allow your frontend origin
+
+**Hosting Options:**
+- **With reverse proxy (nginx/Caddy):** Proxy `/api/*` to the API server, serve static files for everything else
+- **Separate origins:** Set `VITE_API_URL` and configure API CORS headers
+
+### API Server
+
+```bash
+pnpm --filter @boris/api build
+pnpm --filter @boris/api start
+```
+
+Runs on port 4000 by default. Configure `CORS_ORIGIN` to allow your frontend domain.

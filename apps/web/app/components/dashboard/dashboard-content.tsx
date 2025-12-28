@@ -43,11 +43,27 @@ export function DashboardContent() {
     null,
   );
   const [currentAccountCurrency, setCurrentAccountCurrency] = useState('USD');
-  const [loading, setLoading] = useState(true);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [showSpinner, setShowSpinner] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Cache account currencies to avoid refetching
   const currencyCache = useRef<Map<string, string>>(new Map());
+
+  // Cache names for breadcrumbs to prevent flicker during navigation
+  const accountNameCache = useRef<Map<string, string>>(new Map());
+  const objectNameCache = useRef<Map<string, string>>(new Map());
+
+  // Only show spinner after a delay to avoid flash for fast fetches
+  useEffect(() => {
+    if (!isFetching) {
+      setShowSpinner(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSpinner(true), 150);
+    return () => clearTimeout(timer);
+  }, [isFetching]);
 
   // Navigation helper
   const buildUrl = useCallback(
@@ -87,23 +103,29 @@ export function DashboardContent() {
     [navigate, buildUrl, accountId],
   );
 
-  // Build breadcrumbs based on current state
+  // Build breadcrumbs using cached names to prevent flicker
   const breadcrumbs: BreadcrumbItem[] = [
     { id: null, name: 'Ad Accounts', onClick: navigateToRoot },
   ];
 
-  if (accountId && currentAccount) {
+  if (accountId) {
+    const accountName =
+      currentAccount?.name || accountNameCache.current.get(accountId) || 'Account';
     breadcrumbs.push({
       id: accountId,
-      name: currentAccount.name || 'Account',
+      name: accountName,
       onClick: () => navigate(buildUrl(accountId, null)),
     });
   }
 
-  if (parentId && objects.length > 0 && objects[0].parentName) {
+  if (parentId) {
+    const parentName =
+      (objects.length > 0 && objects[0].parentName) ||
+      objectNameCache.current.get(parentId) ||
+      'Campaign';
     breadcrumbs.push({
       id: parentId,
-      name: objects[0].parentName,
+      name: parentName,
       onClick: () => navigate(buildUrl(accountId, parentId)),
     });
   }
@@ -129,7 +151,7 @@ export function DashboardContent() {
   // Fetch data based on current navigation state
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
+      setIsFetching(true);
       setError(null);
 
       const dateRange = { startDate, endDate };
@@ -142,17 +164,30 @@ export function DashboardContent() {
           setObjects([]);
           setCurrentAccount(null);
 
-          // Cache all account currencies for later use
+          // Cache all account currencies and names for later use
           for (const account of accountsData) {
             currencyCache.current.set(account.id, account.currency);
+            if (account.name) {
+              accountNameCache.current.set(account.id, account.name);
+            }
           }
-        } else {
+        } else if (accountId) {
           // Load ad objects for the selected account/parent
           const response = await fetchAdObjects(accountId, parentId, dateRange);
           setObjects(response.data);
 
+          // Cache object names for breadcrumbs
+          for (const obj of response.data) {
+            if (obj.name) {
+              objectNameCache.current.set(obj.id, obj.name);
+            }
+          }
+
           // Use account info from response meta (no extra API call needed)
           setCurrentAccount(response.meta.account);
+          if (response.meta.account?.name) {
+            accountNameCache.current.set(accountId, response.meta.account.name);
+          }
 
           // Get currency from cache if available
           const cachedCurrency = currencyCache.current.get(accountId);
@@ -172,7 +207,8 @@ export function DashboardContent() {
         console.error('Error loading dashboard data:', err);
         setError('Failed to load data. Please try again.');
       } finally {
-        setLoading(false);
+        setIsFetching(false);
+        setIsFirstLoad(false);
       }
     };
 
@@ -238,8 +274,8 @@ export function DashboardContent() {
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
+        {/* Loading State - only show on first load or after delay */}
+        {isFirstLoad && showSpinner && (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="size-8 animate-spin text-muted-foreground" />
           </div>
@@ -252,8 +288,8 @@ export function DashboardContent() {
           </div>
         )}
 
-        {/* Content */}
-        {!loading && !error && (
+        {/* Content - show stale content while fetching, hide only on first load */}
+        {!isFirstLoad && !error && (
           <>
             {/* Ad Accounts View */}
             {!accountId && (

@@ -4,7 +4,7 @@ import {
   SignInButton,
   SignUpButton,
   UserButton,
-} from '@clerk/react-router';
+} from '@clerk/clerk-react';
 import { Link } from 'react-router';
 
 export function Header() {

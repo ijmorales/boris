@@ -6,8 +6,8 @@ import type {
   Platform,
 } from '~/lib/types/dashboard';
 
-// Base API URL - uses the vite proxy config
-const API_BASE_URL = '/api';
+// Base API URL - uses Vite proxy in dev, env variable in production
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Account info returned in meta for objects endpoint
 export interface AccountMeta {
@@ -42,6 +42,7 @@ export async function fetchAdAccounts(
 
   const response = await fetch(
     `${API_BASE_URL}/ad-accounts?${params.toString()}`,
+    { credentials: 'include' },
   );
 
   if (!response.ok) {
@@ -77,6 +78,7 @@ export async function fetchAdObjects(
 
   const response = await fetch(
     `${API_BASE_URL}/ad-accounts/${accountId}/objects?${params.toString()}`,
+    { credentials: 'include' },
   );
 
   if (!response.ok) {

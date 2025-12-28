@@ -9,6 +9,19 @@ export default defineConfig({
     alias: {
       '~': path.resolve(__dirname, './app'),
     },
+    // Prevent duplicate React instances in monorepo
+    dedupe: ['react', 'react-dom', 'react-router'],
+  },
+  // Pre-bundle dependencies for faster dev server cold start in SPA mode
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-router',
+      '@clerk/clerk-react',
+    ],
   },
   server: {
     port: 5173,

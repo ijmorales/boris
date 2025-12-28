@@ -1,5 +1,4 @@
-import { ClerkProvider } from '@clerk/react-router';
-import { clerkMiddleware, rootAuthLoader } from '@clerk/react-router/server';
+import { ClerkProvider } from '@clerk/clerk-react';
 import {
   isRouteErrorResponse,
   Links,
@@ -11,9 +10,62 @@ import {
 import type { Route } from './+types/root';
 import './app.css';
 
-export const middleware: Route.MiddlewareFunction[] = [clerkMiddleware()];
-
-export const loader = (args: Route.LoaderArgs) => rootAuthLoader(args);
+export function HydrateFallback() {
+  // Note: HydrateFallback renders as children of Layout, not as a full document
+  return (
+    <>
+      {/* Header skeleton */}
+      <header
+        style={{
+          height: '64px',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 1.5rem',
+          gap: '1rem',
+        }}
+      >
+        <div
+          style={{
+            width: '100px',
+            height: '24px',
+            backgroundColor: '#e5e7eb',
+            borderRadius: '4px',
+          }}
+        />
+        <div style={{ flex: 1 }} />
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            backgroundColor: '#e5e7eb',
+            borderRadius: '50%',
+          }}
+        />
+      </header>
+      {/* Content skeleton */}
+      <main style={{ padding: '2rem' }}>
+        <div
+          style={{
+            width: '200px',
+            height: '32px',
+            backgroundColor: '#e5e7eb',
+            borderRadius: '4px',
+            marginBottom: '1.5rem',
+          }}
+        />
+        <div
+          style={{
+            width: '100%',
+            height: '400px',
+            backgroundColor: '#e5e7eb',
+            borderRadius: '4px',
+          }}
+        />
+      </main>
+    </>
+  );
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -33,9 +85,41 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Root({ loaderData }: Route.ComponentProps) {
+export default function Root() {
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+  if (!publishableKey) {
+    return (
+      <div
+        style={{
+          padding: '2rem',
+          fontFamily: 'system-ui, sans-serif',
+          maxWidth: '600px',
+          margin: '0 auto',
+        }}
+      >
+        <h1 style={{ color: '#dc2626' }}>Configuration Error</h1>
+        <p>
+          Missing <code>VITE_CLERK_PUBLISHABLE_KEY</code> environment variable.
+        </p>
+        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+          Please add this variable to your <code>.env</code> file. You can get
+          your publishable key from the{' '}
+          <a
+            href="https://dashboard.clerk.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Clerk Dashboard
+          </a>
+          .
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <ClerkProvider loaderData={loaderData}>
+    <ClerkProvider publishableKey={publishableKey}>
       <Outlet />
     </ClerkProvider>
   );
