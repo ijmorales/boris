@@ -23,6 +23,9 @@ export default function Home() {
           <nav>
             <ul>
               <li>
+                <Link to="/dashboard">Dashboard</Link>
+              </li>
+              <li>
                 <Link to="/users">Users</Link>
               </li>
             </ul>

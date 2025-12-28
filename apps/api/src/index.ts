@@ -6,6 +6,7 @@ import express from 'express';
 import { env } from './lib/env.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/error-handler.js';
+import { adAccountsRouter } from './routes/ad-accounts.js';
 import { healthRouter } from './routes/health.js';
 import { syncRouter } from './routes/sync.js';
 import { usersRouter } from './routes/users.js';
@@ -23,6 +24,7 @@ app.use('/health', healthRouter);
 app.use(clerkMiddleware());
 
 // Protected routes
+app.use('/api/ad-accounts', requireAuth, adAccountsRouter);
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/sync', requireAuth, syncRouter);
 

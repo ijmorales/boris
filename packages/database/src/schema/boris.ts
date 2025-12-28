@@ -143,8 +143,10 @@ export const spendings = pgTable(
     metrics: jsonb('metrics'), // Platform-specific metrics (CTR, CPC, etc.)
   },
   (table) => [
+    // FK index for joins with ad_objects
     index('spendings_ad_object_idx').on(table.adObjectId),
-    index('spendings_collected_at_idx').on(table.collectedAt),
+    // Note: TimescaleDB creates automatic index on collected_at (partition column)
+    // period_start index omitted - add if queries become slow
   ],
 );
 

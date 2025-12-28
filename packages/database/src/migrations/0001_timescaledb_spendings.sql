@@ -19,5 +19,11 @@ SELECT create_hypertable(
 );
 
 -- Add check constraint to prevent self-referential loops in ad_objects
-ALTER TABLE ad_objects ADD CONSTRAINT ad_objects_no_self_parent
-  CHECK (id != parent_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'ad_objects_no_self_parent'
+  ) THEN
+    ALTER TABLE ad_objects ADD CONSTRAINT ad_objects_no_self_parent CHECK (id != parent_id);
+  END IF;
+END $$;

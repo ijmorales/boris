@@ -8,6 +8,20 @@
       "when": 1766606484406,
       "tag": "0000_boris_data_model",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1766606484407,
+      "tag": "0001_timescaledb_spendings",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766929206583,
+      "tag": "0002_smooth_winter_soldier",
+      "breakpoints": true
     }
   ]
 }
