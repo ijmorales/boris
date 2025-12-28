@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut } from '@clerk/react-router';
+import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { Link } from 'react-router';
 import { Header } from '../components/header';
 import type { Route } from './+types/home';
