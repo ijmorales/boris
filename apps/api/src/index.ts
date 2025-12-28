@@ -9,7 +9,6 @@ import { errorHandler } from './middleware/error-handler.js';
 import { adAccountsRouter } from './routes/ad-accounts.js';
 import { healthRouter } from './routes/health.js';
 import { syncRouter } from './routes/sync.js';
-import { usersRouter } from './routes/users.js';
 
 const app = express();
 
@@ -25,7 +24,6 @@ app.use(clerkMiddleware());
 
 // Protected routes
 app.use('/api/ad-accounts', requireAuth, adAccountsRouter);
-app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/sync', requireAuth, syncRouter);
 
 app.use(errorHandler);

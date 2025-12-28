@@ -44,7 +44,8 @@ describe('Authentication Middleware', () => {
 
     // Mock getAuth to return the auth state from req
     vi.mocked(getAuth).mockImplementation(
-      (req: RequestWithAuth) => req.auth || { userId: null },
+      ((req: RequestWithAuth) =>
+        req.auth || { userId: null }) as typeof getAuth,
     );
 
     testApp.use(clerkMiddleware());
