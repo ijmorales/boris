@@ -8,3 +8,7 @@ build/
 coverage/
 *.log
 .DS_Store
+.playwright-mcp/
+
+# Generated JS files from TypeScript
+apps/web/**/*.js
