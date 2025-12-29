@@ -29,6 +29,13 @@
       "when": 1766929300000,
       "tag": "0003_remove_users_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767120000000,
+      "tag": "0004_add_clients",
+      "breakpoints": true
     }
   ]
 }

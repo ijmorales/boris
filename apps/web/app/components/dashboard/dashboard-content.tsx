@@ -10,6 +10,7 @@ import { DateRangePicker } from '~/components/dashboard/date-range-picker';
 import { MetricsSummary } from '~/components/dashboard/metrics-summary';
 import { ObjectsTable } from '~/components/dashboard/objects-table';
 import { Button } from '~/components/ui/button';
+import { type Client, fetchClients } from '~/lib/api/clients';
 import {
   type AccountMeta,
   fetchAdAccounts,
@@ -30,6 +31,7 @@ export function DashboardContent() {
   const parentId = searchParams.get('parentId');
   const urlStartDate = searchParams.get('startDate');
   const urlEndDate = searchParams.get('endDate');
+  const urlClientId = searchParams.get('clientId');
 
   // Date range state
   const defaultRange = getDefaultDateRange();
@@ -38,6 +40,10 @@ export function DashboardContent() {
 
   // State management
   const [accounts, setAccounts] = useState<AdAccountWithSpending[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(
+    urlClientId,
+  );
   const [objects, setObjects] = useState<AdObjectWithSpending[]>([]);
   const [currentAccount, setCurrentAccount] = useState<AccountMeta | null>(
     null,
@@ -54,6 +60,13 @@ export function DashboardContent() {
   // Cache names for breadcrumbs to prevent flicker during navigation
   const accountNameCache = useRef<Map<string, string>>(new Map());
   const objectNameCache = useRef<Map<string, string>>(new Map());
+
+  // Fetch clients on mount
+  useEffect(() => {
+    fetchClients()
+      .then(setClients)
+      .catch((err) => console.error('Failed to fetch clients:', err));
+  }, []);
 
   // Only show spinner after a delay to avoid flash for fast fetches
   useEffect(() => {
@@ -72,15 +85,20 @@ export function DashboardContent() {
       newParentId: string | null,
       newStartDate?: string,
       newEndDate?: string,
+      newClientId?: string | null,
     ) => {
       const params = new URLSearchParams();
       if (newAccountId) params.set('accountId', newAccountId);
       if (newParentId) params.set('parentId', newParentId);
       params.set('startDate', newStartDate || startDate);
       params.set('endDate', newEndDate || endDate);
+      // Use provided clientId, or fall back to current selection
+      const clientIdToUse =
+        newClientId !== undefined ? newClientId : selectedClientId;
+      if (clientIdToUse) params.set('clientId', clientIdToUse);
       return `/dashboard?${params.toString()}`;
     },
-    [startDate, endDate],
+    [startDate, endDate, selectedClientId],
   );
 
   // Navigation functions
@@ -150,6 +168,15 @@ export function DashboardContent() {
     [navigate, buildUrl, accountId, parentId],
   );
 
+  // Handle client filter changes
+  const handleClientChange = useCallback(
+    (clientId: string | null) => {
+      setSelectedClientId(clientId);
+      navigate(buildUrl(null, null, startDate, endDate, clientId));
+    },
+    [navigate, buildUrl, startDate, endDate],
+  );
+
   // Fetch data based on current navigation state
   useEffect(() => {
     const loadData = async () => {
@@ -217,6 +244,18 @@ export function DashboardContent() {
     loadData();
   }, [accountId, parentId, startDate, endDate]);
 
+  // Filter accounts by selected client
+  const filteredAccounts = useMemo(() => {
+    if (!selectedClientId) return accounts;
+    return accounts.filter((account) => account.clientId === selectedClientId);
+  }, [accounts, selectedClientId]);
+
+  // Get selected client name for display
+  const selectedClientName = useMemo(() => {
+    if (!selectedClientId) return null;
+    return clients.find((c) => c.id === selectedClientId)?.name || null;
+  }, [clients, selectedClientId]);
+
   // Calculate aggregated metrics for current view
   const aggregatedMetrics = useMemo(
     () =>
@@ -248,11 +287,28 @@ export function DashboardContent() {
               Hierarchical Ad Objects Explorer
             </p>
           </div>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onDateRangeChange={handleDateRangeChange}
-          />
+          <div className="flex items-center gap-4">
+            {/* Client Filter */}
+            {clients.length > 0 && !accountId && (
+              <select
+                className="text-sm border rounded px-3 py-2 bg-background"
+                value={selectedClientId || ''}
+                onChange={(e) => handleClientChange(e.target.value || null)}
+              >
+                <option value="">All Clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onDateRangeChange={handleDateRangeChange}
+            />
+          </div>
         </div>
 
         {/* Breadcrumb Navigation */}
@@ -296,9 +352,20 @@ export function DashboardContent() {
             {/* Ad Accounts View */}
             {!accountId && (
               <div>
-                <h2 className="text-2xl font-semibold mb-6">Ad Accounts</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold">
+                    {selectedClientName
+                      ? `${selectedClientName} - Ad Accounts`
+                      : 'Ad Accounts'}
+                  </h2>
+                  {selectedClientId && (
+                    <span className="text-sm text-muted-foreground">
+                      {filteredAccounts.length} of {accounts.length} accounts
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {accounts.map((account) => (
+                  {filteredAccounts.map((account) => (
                     <AdAccountCard
                       key={account.id}
                       account={account}
@@ -306,9 +373,13 @@ export function DashboardContent() {
                     />
                   ))}
                 </div>
-                {accounts.length === 0 && (
+                {filteredAccounts.length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">
-                    <p>No ad accounts found for the selected period.</p>
+                    <p>
+                      {selectedClientId
+                        ? 'No ad accounts assigned to this client.'
+                        : 'No ad accounts found for the selected period.'}
+                    </p>
                   </div>
                 )}
               </div>

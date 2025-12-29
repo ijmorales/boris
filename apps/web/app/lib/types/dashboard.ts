@@ -12,6 +12,7 @@ export interface AdAccountWithSpending {
   platform: Platform;
   currency: string;
   timezone: string;
+  clientId: string | null;
   totalSpendCents: number;
   totalImpressions: number;
   totalClicks: number;

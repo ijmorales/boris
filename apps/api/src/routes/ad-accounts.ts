@@ -1,4 +1,8 @@
 import {
+  adAccounts,
+  clients,
+  db,
+  eq,
   getAccountById,
   getAccountsWithSpending,
   getObjectsWithSpending,
@@ -98,5 +102,60 @@ adAccountsRouter.get(
         },
       },
     });
+  }),
+);
+
+const updateAccountSchema = z.object({
+  clientId: z.string().uuid().nullable(),
+});
+
+// PATCH /api/ad-accounts/:accountId
+adAccountsRouter.patch(
+  '/:accountId',
+  asyncHandler(async (req, res) => {
+    const accountIdResult = uuidSchema.safeParse(req.params.accountId);
+    if (!accountIdResult.success) {
+      throw new ValidationError('Invalid account ID', {
+        accountId: ['Must be a valid UUID'],
+      });
+    }
+
+    const parseResult = updateAccountSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const details: Record<string, string[]> = {};
+      for (const error of parseResult.error.errors) {
+        const path = error.path.join('.');
+        if (!details[path]) details[path] = [];
+        details[path].push(error.message);
+      }
+      throw new ValidationError('Invalid account data', details);
+    }
+
+    const { clientId } = parseResult.data;
+
+    // Validate client exists if clientId is provided
+    if (clientId !== null) {
+      const clientExists = await db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(eq(clients.id, clientId))
+        .limit(1);
+
+      if (clientExists.length === 0) {
+        throw new NotFoundError('Client not found');
+      }
+    }
+
+    const [account] = await db
+      .update(adAccounts)
+      .set({ clientId, updatedAt: new Date() })
+      .where(eq(adAccounts.id, accountIdResult.data))
+      .returning();
+
+    if (!account) {
+      throw new NotFoundError('Account not found');
+    }
+
+    res.json({ data: account });
   }),
 );

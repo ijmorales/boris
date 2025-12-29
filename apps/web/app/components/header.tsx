@@ -21,14 +21,26 @@ export function Header() {
       <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Boris</h1>
       </Link>
-      <nav style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <SignedIn>
+          <Link
+            to="/dashboard"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            Dashboard
+          </Link>
+          <Link
+            to="/clients"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            Clients
+          </Link>
+          <UserButton showName />
+        </SignedIn>
         <SignedOut>
           <SignInButton mode="modal" />
           <SignUpButton mode="modal" />
         </SignedOut>
-        <SignedIn>
-          <UserButton showName />
-        </SignedIn>
       </nav>
     </header>
   );

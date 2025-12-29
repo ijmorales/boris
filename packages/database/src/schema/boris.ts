@@ -28,6 +28,32 @@ export const adObjectTypeEnum = pgEnum('ad_object_type', [
 ]);
 
 // ============================================================================
+// CLIENTS
+// ============================================================================
+
+export const clients = pgTable(
+  'clients',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: text('organization_id'), // Clerk organization ID - nullable until orgs are implemented
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('clients_name_idx').on(table.name),
+    index('clients_organization_idx').on(table.organizationId),
+  ],
+);
+
+export type Client = typeof clients.$inferSelect;
+export type NewClient = typeof clients.$inferInsert;
+
+// ============================================================================
 // PLATFORM CONNECTIONS
 // ============================================================================
 
@@ -57,6 +83,9 @@ export const adAccounts = pgTable(
     platformConnectionId: uuid('platform_connection_id')
       .notNull()
       .references(() => platformConnections.id, { onDelete: 'cascade' }),
+    clientId: uuid('client_id').references(() => clients.id, {
+      onDelete: 'set null',
+    }),
     externalId: text('external_id').notNull(),
     name: text('name'),
     currency: text('currency').notNull(),
@@ -74,6 +103,7 @@ export const adAccounts = pgTable(
       table.externalId,
     ),
     index('ad_accounts_platform_connection_idx').on(table.platformConnectionId),
+    index('ad_accounts_client_idx').on(table.clientId),
   ],
 );
 
@@ -157,6 +187,10 @@ export type NewSpending = typeof spendings.$inferInsert;
 // RELATIONS (for Drizzle relational queries)
 // ============================================================================
 
+export const clientsRelations = relations(clients, ({ many }) => ({
+  adAccounts: many(adAccounts),
+}));
+
 export const platformConnectionsRelations = relations(
   platformConnections,
   ({ many }) => ({
@@ -165,6 +199,10 @@ export const platformConnectionsRelations = relations(
 );
 
 export const adAccountsRelations = relations(adAccounts, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [adAccounts.clientId],
+    references: [clients.id],
+  }),
   platformConnection: one(platformConnections, {
     fields: [adAccounts.platformConnectionId],
     references: [platformConnections.id],
