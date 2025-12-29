@@ -99,6 +99,7 @@ function latestSpendingsSubquery(startDate: Date, endDate: Date) {
 export async function getAccountsWithSpending(
   startDate: Date,
   endDate: Date,
+  organizationId: string,
 ): Promise<AccountWithSpending[]> {
   const latestSpendings = latestSpendingsSubquery(startDate, endDate);
 
@@ -124,6 +125,7 @@ export async function getAccountsWithSpending(
       and(eq(adObjects.adAccountId, adAccounts.id), eq(adObjects.type, 'AD')),
     )
     .leftJoin(latestSpendings, eq(latestSpendings.adObjectId, adObjects.id))
+    .where(eq(platformConnections.organizationId, organizationId))
     .groupBy(
       adAccounts.id,
       adAccounts.name,
@@ -258,8 +260,10 @@ export async function getObjectsWithSpending(
 }
 
 // Get account info (for breadcrumb root and validation)
+// Returns null if account doesn't exist or doesn't belong to the organization
 export async function getAccountById(
   accountId: string,
+  organizationId: string,
 ): Promise<AccountInfo | null> {
   const result = await db
     .select({
@@ -272,7 +276,12 @@ export async function getAccountById(
       platformConnections,
       eq(adAccounts.platformConnectionId, platformConnections.id),
     )
-    .where(eq(adAccounts.id, accountId))
+    .where(
+      and(
+        eq(adAccounts.id, accountId),
+        eq(platformConnections.organizationId, organizationId),
+      ),
+    )
     .limit(1);
 
   return result[0] ?? null;

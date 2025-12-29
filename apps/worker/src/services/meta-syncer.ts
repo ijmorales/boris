@@ -113,10 +113,13 @@ export class MetaSyncer {
       return existing.id;
     }
 
-    // Create new connection
+    // Create new connection using the default seed organization
+    // TODO: In future, sync jobs should include organizationId in the payload
+    const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
     const [created] = await db
       .insert(platformConnections)
       .values({
+        organizationId: DEFAULT_ORG_ID,
         platform: 'META',
         credentials: { accessToken: '[STORED_IN_ENV]' }, // Don't store actual token
       })

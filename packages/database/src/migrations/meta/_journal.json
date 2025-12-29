@@ -26,7 +26,7 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1766929300000,
+      "when": 1766929236007,
       "tag": "0003_remove_users_table",
       "breakpoints": true
     },
@@ -35,6 +35,27 @@
       "version": "7",
       "when": 1767120000000,
       "tag": "0004_add_clients",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767130000000,
+      "tag": "0005_add_organization_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767150000000,
+      "tag": "0006_organizations_and_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767160000000,
+      "tag": "0007_add_invites",
       "breakpoints": true
     }
   ]

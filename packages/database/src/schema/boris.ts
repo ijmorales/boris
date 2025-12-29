@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
   type AnyPgColumn,
   bigint,
+  boolean,
   index,
   jsonb,
   pgEnum,
@@ -11,6 +12,81 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+
+// ============================================================================
+// ORGANIZATIONS
+// ============================================================================
+
+export const organizations = pgTable('organizations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  domain: text('domain').unique(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type Organization = typeof organizations.$inferSelect;
+export type NewOrganization = typeof organizations.$inferInsert;
+
+// ============================================================================
+// USERS
+// ============================================================================
+
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    clerkId: text('clerk_id').notNull().unique(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'set null',
+    }),
+    isAdmin: boolean('is_admin').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('users_clerk_id_idx').on(table.clerkId),
+    index('users_organization_id_idx').on(table.organizationId),
+  ],
+);
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+// ============================================================================
+// INVITES
+// ============================================================================
+
+export const invites = pgTable(
+  'invites',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    email: text('email').notNull(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    isAdmin: boolean('is_admin').notNull().default(false),
+    invitedById: uuid('invited_by_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique('invites_email_org').on(table.email, table.organizationId),
+    index('invites_email_idx').on(table.email),
+    index('invites_organization_idx').on(table.organizationId),
+  ],
+);
+
+export type Invite = typeof invites.$inferSelect;
+export type NewInvite = typeof invites.$inferInsert;
 
 // ============================================================================
 // ENUMS
@@ -35,7 +111,9 @@ export const clients = pgTable(
   'clients',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    organizationId: text('organization_id'), // Clerk organization ID - nullable until orgs are implemented
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
@@ -57,17 +135,24 @@ export type NewClient = typeof clients.$inferInsert;
 // PLATFORM CONNECTIONS
 // ============================================================================
 
-export const platformConnections = pgTable('platform_connections', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  platform: platformEnum('platform').notNull(),
-  credentials: jsonb('credentials').notNull(), // OAuth tokens - encrypt at app layer
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const platformConnections = pgTable(
+  'platform_connections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    platform: platformEnum('platform').notNull(),
+    credentials: jsonb('credentials').notNull(), // OAuth tokens - encrypt at app layer
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index('platform_connections_org_idx').on(table.organizationId)],
+);
 
 export type PlatformConnection = typeof platformConnections.$inferSelect;
 export type NewPlatformConnection = typeof platformConnections.$inferInsert;
@@ -187,13 +272,47 @@ export type NewSpending = typeof spendings.$inferInsert;
 // RELATIONS (for Drizzle relational queries)
 // ============================================================================
 
-export const clientsRelations = relations(clients, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(users),
+  invites: many(invites),
+  platformConnections: many(platformConnections),
+  clients: many(clients),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [users.organizationId],
+    references: [organizations.id],
+  }),
+  invitesSent: many(invites),
+}));
+
+export const invitesRelations = relations(invites, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [invites.organizationId],
+    references: [organizations.id],
+  }),
+  invitedBy: one(users, {
+    fields: [invites.invitedById],
+    references: [users.id],
+  }),
+}));
+
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [clients.organizationId],
+    references: [organizations.id],
+  }),
   adAccounts: many(adAccounts),
 }));
 
 export const platformConnectionsRelations = relations(
   platformConnections,
-  ({ many }) => ({
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [platformConnections.organizationId],
+      references: [organizations.id],
+    }),
     adAccounts: many(adAccounts),
   }),
 );

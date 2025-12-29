@@ -1,8 +1,9 @@
-import { adAccounts, clients, db, eq, sql } from '@boris/database';
+import { adAccounts, and, clients, db, eq, sql } from '@boris/database';
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../lib/async-handler.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { requireOrgMember } from '../middleware/auth.js';
 
 export const clientsRouter = Router();
 
@@ -17,7 +18,8 @@ const updateClientSchema = z.object({
 // GET /api/clients
 clientsRouter.get(
   '/',
-  asyncHandler(async (_req, res) => {
+  requireOrgMember(),
+  asyncHandler(async (req, res) => {
     const result = await db
       .select({
         id: clients.id,
@@ -27,6 +29,7 @@ clientsRouter.get(
       })
       .from(clients)
       .leftJoin(adAccounts, eq(clients.id, adAccounts.clientId))
+      .where(eq(clients.organizationId, req.organization!.id))
       .groupBy(clients.id)
       .orderBy(clients.name);
 
@@ -37,6 +40,7 @@ clientsRouter.get(
 // GET /api/clients/:id
 clientsRouter.get(
   '/:id',
+  requireOrgMember(),
   asyncHandler(async (req, res) => {
     const idResult = z.string().uuid().safeParse(req.params.id);
     if (!idResult.success) {
@@ -54,7 +58,12 @@ clientsRouter.get(
       })
       .from(clients)
       .leftJoin(adAccounts, eq(clients.id, adAccounts.clientId))
-      .where(eq(clients.id, idResult.data))
+      .where(
+        and(
+          eq(clients.id, idResult.data),
+          eq(clients.organizationId, req.organization!.id),
+        ),
+      )
       .groupBy(clients.id);
 
     if (result.length === 0) {
@@ -68,6 +77,7 @@ clientsRouter.get(
 // POST /api/clients
 clientsRouter.post(
   '/',
+  requireOrgMember(),
   asyncHandler(async (req, res) => {
     const parseResult = createClientSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -82,7 +92,10 @@ clientsRouter.post(
 
     const { name } = parseResult.data;
 
-    const [client] = await db.insert(clients).values({ name }).returning();
+    const [client] = await db
+      .insert(clients)
+      .values({ name, organizationId: req.organization!.id })
+      .returning();
 
     res.status(201).json({ data: client });
   }),
@@ -91,6 +104,7 @@ clientsRouter.post(
 // PATCH /api/clients/:id
 clientsRouter.patch(
   '/:id',
+  requireOrgMember(),
   asyncHandler(async (req, res) => {
     const idResult = z.string().uuid().safeParse(req.params.id);
     if (!idResult.success) {
@@ -115,7 +129,12 @@ clientsRouter.patch(
     const [client] = await db
       .update(clients)
       .set({ name, updatedAt: new Date() })
-      .where(eq(clients.id, idResult.data))
+      .where(
+        and(
+          eq(clients.id, idResult.data),
+          eq(clients.organizationId, req.organization!.id),
+        ),
+      )
       .returning();
 
     if (!client) {
@@ -129,6 +148,7 @@ clientsRouter.patch(
 // DELETE /api/clients/:id
 clientsRouter.delete(
   '/:id',
+  requireOrgMember(),
   asyncHandler(async (req, res) => {
     const idResult = z.string().uuid().safeParse(req.params.id);
     if (!idResult.success) {
@@ -139,7 +159,12 @@ clientsRouter.delete(
 
     const result = await db
       .delete(clients)
-      .where(eq(clients.id, idResult.data))
+      .where(
+        and(
+          eq(clients.id, idResult.data),
+          eq(clients.organizationId, req.organization!.id),
+        ),
+      )
       .returning({ id: clients.id });
 
     if (result.length === 0) {

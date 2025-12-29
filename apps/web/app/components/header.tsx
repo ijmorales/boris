@@ -35,6 +35,12 @@ export function Header() {
           >
             Clients
           </Link>
+          <Link
+            to="/team"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            Team
+          </Link>
           <UserButton showName />
         </SignedIn>
         <SignedOut>

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { asyncHandler } from '../lib/async-handler.js';
 import { ValidationError } from '../lib/errors.js';
 import { queue } from '../lib/queue.js';
+import { requireOrgMember } from '../middleware/auth.js';
 
 export const syncRouter = Router();
 
@@ -69,8 +70,10 @@ function generateMonthlyDateRanges(
 }
 
 // POST /api/sync - Start Meta Ads sync jobs (chunked by month)
+// Only admins can trigger syncs
 syncRouter.post(
   '/',
+  requireOrgMember({ adminOnly: true }),
   asyncHandler(async (req, res) => {
     const result = startSyncSchema.safeParse(req.body);
 
