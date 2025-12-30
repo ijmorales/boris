@@ -30,6 +30,7 @@ export interface AccountWithSpending {
   platform: 'META' | 'GOOGLE_ADS' | 'TIKTOK';
   currency: string;
   timezone: string;
+  clientId: string | null;
   totalSpendCents: number;
   totalImpressions: number;
   totalClicks: number;
@@ -108,6 +109,7 @@ export async function getAccountsWithSpending(
       platform: platformConnections.platform,
       currency: adAccounts.currency,
       timezone: adAccounts.timezone,
+      clientId: adAccounts.clientId,
       totalSpendCents: sql<number>`COALESCE(SUM(${latestSpendings.amountCents}), 0)::bigint`,
       totalImpressions: sql<number>`COALESCE(SUM(${latestSpendings.impressions}), 0)::bigint`,
       totalClicks: sql<number>`COALESCE(SUM(${latestSpendings.clicks}), 0)::bigint`,
@@ -128,6 +130,7 @@ export async function getAccountsWithSpending(
       platformConnections.platform,
       adAccounts.currency,
       adAccounts.timezone,
+      adAccounts.clientId,
     );
 
   return results.map((row) => ({
@@ -136,6 +139,7 @@ export async function getAccountsWithSpending(
     platform: row.platform,
     currency: row.currency,
     timezone: row.timezone,
+    clientId: row.clientId,
     totalSpendCents: Number(row.totalSpendCents),
     totalImpressions: Number(row.totalImpressions),
     totalClicks: Number(row.totalClicks),
