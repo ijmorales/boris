@@ -110,7 +110,9 @@ export function DashboardContent() {
 
   if (accountId) {
     const accountName =
-      currentAccount?.name || accountNameCache.current.get(accountId) || 'Account';
+      currentAccount?.name ||
+      accountNameCache.current.get(accountId) ||
+      'Account';
     breadcrumbs.push({
       id: accountId,
       name: accountName,

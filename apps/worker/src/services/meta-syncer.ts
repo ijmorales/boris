@@ -10,6 +10,7 @@ import {
   sql,
 } from '@boris/database';
 import { env } from '../lib/env.js';
+import { formatDateInTimezone } from '../lib/timezone.js';
 import type {
   MetaAdAccount,
   MetaInsight,
@@ -62,6 +63,7 @@ export class MetaSyncer {
       // Fetch insights for all levels
       const insights = await this.fetchAllInsights(
         metaAccount.id.replace('act_', ''),
+        metaAccount.timezone_name,
         startDate,
         endDate,
       );
@@ -201,12 +203,15 @@ export class MetaSyncer {
 
   private async fetchAllInsights(
     accountId: string,
+    accountTimezone: string,
     startDate: Date,
     endDate: Date,
   ): Promise<MetaInsight[]> {
+    // Format dates in the ad account's timezone, not UTC.
+    // Meta API interprets time_range dates in the account's timezone.
     const timeRange = JSON.stringify({
-      since: startDate.toISOString().split('T')[0],
-      until: endDate.toISOString().split('T')[0],
+      since: formatDateInTimezone(startDate, accountTimezone),
+      until: formatDateInTimezone(endDate, accountTimezone),
     });
 
     const fields = [
