@@ -4,12 +4,14 @@ import {
   closeDatabase,
   db,
   eq,
+  organizations,
   platformConnections,
   spendings,
 } from '@boris/database';
 import { afterAll, describe, expect, it } from 'vitest';
 
 describe('Boris Data Model', () => {
+  let organizationId: string;
   let platformConnectionId: string;
   let adAccountId: string;
   let campaignId: string;
@@ -35,13 +37,35 @@ describe('Boris Data Model', () => {
         .delete(platformConnections)
         .where(eq(platformConnections.id, platformConnectionId));
     }
+    if (organizationId) {
+      await db
+        .delete(organizations)
+        .where(eq(organizations.id, organizationId));
+    }
     await closeDatabase();
+  });
+
+  it('creates an organization', async () => {
+    const [org] = await db
+      .insert(organizations)
+      .values({
+        name: 'Test Organization',
+        domain: 'test.example.com',
+      })
+      .returning();
+
+    expect(org).toBeDefined();
+    expect(org.id).toBeDefined();
+    expect(org.name).toBe('Test Organization');
+
+    organizationId = org.id;
   });
 
   it('creates a platform connection', async () => {
     const [connection] = await db
       .insert(platformConnections)
       .values({
+        organizationId,
         platform: 'META',
         credentials: {
           accessToken: 'test-token',

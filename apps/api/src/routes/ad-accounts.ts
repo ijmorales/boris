@@ -11,6 +11,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../lib/async-handler.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { requireOrgMember } from '../middleware/auth.js';
 
 export const adAccountsRouter = Router();
 
@@ -29,6 +30,7 @@ const uuidSchema = z.string().uuid();
 // GET /api/ad-accounts
 adAccountsRouter.get(
   '/',
+  requireOrgMember(),
   asyncHandler(async (req, res) => {
     const result = dateRangeSchema.safeParse(req.query);
     if (!result.success) {
@@ -44,6 +46,7 @@ adAccountsRouter.get(
     const accounts = await getAccountsWithSpending(
       result.data.startDate,
       result.data.endDate,
+      req.organization!.id,
     );
 
     res.json({ data: accounts });
@@ -53,6 +56,7 @@ adAccountsRouter.get(
 // GET /api/ad-accounts/:accountId/objects
 adAccountsRouter.get(
   '/:accountId/objects',
+  requireOrgMember(),
   asyncHandler(async (req, res) => {
     // Validate accountId path param
     const accountIdResult = uuidSchema.safeParse(req.params.accountId);
@@ -77,8 +81,11 @@ adAccountsRouter.get(
       throw new ValidationError('Invalid query params', details);
     }
 
-    // Check account exists
-    const account = await getAccountById(accountIdResult.data);
+    // Check account exists and belongs to organization
+    const account = await getAccountById(
+      accountIdResult.data,
+      req.organization!.id,
+    );
     if (!account) {
       throw new NotFoundError('Account not found');
     }
